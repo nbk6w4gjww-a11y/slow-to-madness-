@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slow2Madness – App</title>
+<style>
+:root{--bg:#141417;--surface:#222228;--border:#3e3e48;--text:#f0ede8;--accent:#e85a42;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;}
+#appBar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;
+  display:flex;align-items:center;justify-content:space-between;}
+#appBar span{font-size:.9rem;color:#8a8680;}
+#appBar strong{color:var(--text);}
+#appBar button{padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;
+  background:transparent;color:var(--text);cursor:pointer;font-size:.85rem;transition:all .2s;}
+#appBar button:hover{border-color:var(--accent);color:var(--accent);}
+#appFrame{width:100%;height:calc(100vh - 50px);border:none;}
+</style>
+</head>
+<body>
+<div id="appBar">
+  <div><strong>✓ Slow2Madness</strong> <span id="userLabel"></span></div>
+  <button id="logoutBtn">Abmelden</button>
+</div>
+<iframe id="appFrame" src="slow2madness-app.html"></iframe>
+
+<script type="module" src="./js/app-guard.js"></script>
+</body>
+</html>

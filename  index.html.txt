@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="refresh" content="0;url=login.html">
+<title>Slow2Madness</title>
+</head>
+<body style="background:#141417;color:#f0ede8;font-family:system-ui;text-align:center;padding-top:40vh;">
+  <p>Weiterleitung...</p>
+</body>
+</html>

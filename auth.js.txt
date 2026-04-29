@@ -1,0 +1,206 @@
+import { supabase } from './supabase-config.js';
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN CREDENTIALS (fest im Code)
+// ═══════════════════════════════════════════════════════════════
+const ADMIN_USER = "Jonas-nickel@gmx.net";
+const ADMIN_PASS = "Jo29na10s";
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════
+function hashPassword(pw) {
+  let hash = 0;
+  for (let i = 0; i < pw.length; i++) {
+    const char = pw.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return "hw_" + Math.abs(hash).toString(16).padStart(12, '0');
+}
+
+function generateDeviceId() {
+  let id = localStorage.getItem('deviceId');
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    localStorage.setItem('deviceId', id);
+  }
+  return id;
+}
+
+function setCookie(name, value, hours) {
+  const d = new Date();
+  d.setTime(d.getTime() + (hours * 60 * 60 * 1000));
+  document.cookie = name + "=" + encodeURIComponent(value) + ";expires=" + d.toUTCString() + ";path=/";
+}
+
+function getCookie(name) {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+function deleteCookie(name) {
+  document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════════════
+export async function login(username, password) {
+  const deviceId = generateDeviceId();
+  const passwordHash = hashPassword(password);
+
+  // ─── ADMIN LOGIN ───
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    setCookie('sessionUser', JSON.stringify({
+      username: ADMIN_USER,
+      isAdmin: true,
+      deviceId: deviceId,
+      loginAt: Date.now()
+    }), 24);
+    return { success: true, isAdmin: true, redirect: '/admin.html' };
+  }
+
+  // ─── USER LOGIN (Supabase) ───
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('username', username)
+    .single();
+
+  if (error || !users) {
+    return { success: false, error: "Benutzer nicht gefunden." };
+  }
+
+  if (users.password_hash !== passwordHash) {
+    return { success: false, error: "Falsches Passwort." };
+  }
+
+  if (users.status === "banned") {
+    return { success: false, error: "Account gesperrt." };
+  }
+
+  const allowedDevices = users.allowed_devices || 1;
+  const deviceIds = users.device_ids || [];
+
+  if (!deviceIds.includes(deviceId)) {
+    if (deviceIds.length >= allowedDevices) {
+      return { 
+        success: false, 
+        error: `Geräte-Limit erreicht (${allowedDevices}). Kontaktieren Sie den Admin.` 
+      };
+    }
+    await supabase
+      .from('users')
+      .update({ device_ids: [...deviceIds, deviceId] })
+      .eq('id', users.id);
+  }
+
+  setCookie('sessionUser', JSON.stringify({
+    username: username,
+    isAdmin: false,
+    userId: users.id,
+    deviceId: deviceId,
+    loginAt: Date.now()
+  }), 24);
+
+  return { success: true, isAdmin: false, redirect: '/app.html' };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SESSION CHECK
+// ═══════════════════════════════════════════════════════════════
+export function getSession() {
+  const raw = getCookie('sessionUser');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+export function logout() {
+  deleteCookie('sessionUser');
+  localStorage.removeItem('deviceId');
+  window.location.href = '/login.html';
+}
+
+export function requireAuth(requireAdmin = false) {
+  const session = getSession();
+  if (!session) {
+    window.location.href = '/login.html';
+    return null;
+  }
+  if (requireAdmin && !session.isAdmin) {
+    window.location.href = '/app.html';
+    return null;
+  }
+  return session;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
+export async function getAllUsers() {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createUser(username, password, allowedDevices = 1) {
+  const passwordHash = hashPassword(password);
+  
+  const { data, error } = await supabase
+    .from('users')
+    .insert([{
+      username: username,
+      password_hash: passwordHash,
+      status: "active",
+      allowed_devices: allowedDevices,
+      device_ids: [],
+      created_at: new Date().toISOString()
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data.id;
+}
+
+export async function updateUser(userId, updates) {
+  const { error } = await supabase
+    .from('users')
+    .update(updates)
+    .eq('id', userId);
+
+  if (error) throw error;
+}
+
+export async function deleteUser(userId) {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', userId);
+
+  if (error) throw error;
+}
+
+export async function resetDevices(userId) {
+  await updateUser(userId, { device_ids: [] });
+}
+
+export async function removeDevice(userId, deviceId) {
+  const { data: user } = await supabase
+    .from('users')
+    .select('device_ids')
+    .eq('id', userId)
+    .single();
+
+  const newDevices = (user.device_ids || []).filter(d => d !== deviceId);
+  await updateUser(userId, { device_ids: newDevices });
+}

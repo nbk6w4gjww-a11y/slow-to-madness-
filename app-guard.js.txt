@@ -1,0 +1,18 @@
+import { requireAuth } from './auth.js';
+
+const session = requireAuth(false);
+if (!session) {
+  throw new Error("Nicht eingeloggt");
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const userLabel = document.getElementById('userLabel');
+  if (userLabel) userLabel.textContent = session.username;
+  
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      import('./auth.js').then(m => m.logout());
+    });
+  }
+});

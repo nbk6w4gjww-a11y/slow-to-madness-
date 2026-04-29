@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Slow2Madness</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#141417; --surface:#222228; --surface2:#2a2a32;
+  --border:#3e3e48; --text:#f0ede8; --text2:#c8c4c0;
+  --accent:#e85a42; --gold:#ddb040; --tabbar:#0e0e10;
+  --muted:#8a8680; --info-bg:#1a2030; --info-border:#2a3858;
+  --info-text:#90b8e8; --legend-bg:#18202e; --legend-border:#253050;
+  --legend-text:#90aae0; --card-bg:#222228; --input-bg:#2a2a32;
+}
+.light-mode{
+  --bg:#f0ece4; --surface:#ffffff; --surface2:#ede8df;
+  --border:#c8c0b4; --text:#1a1208; --text2:#504540;
+  --accent:#c03020; --gold:#8a5800; --tabbar:#2a1e10;
+  --muted:#887060; --info-bg:#e8f0f8; --info-border:#9ab8d8;
+  --info-text:#1a4878; --legend-bg:#eef2ff; --legend-border:#9ab0e0;
+  --legend-text:#2040a0; --card-bg:#ffffff; --input-bg:#f5f0e8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;min-height:100vh;transition:background .3s,color .3s;}
+header{background:var(--tabbar);color:#f0ede8;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--accent);}
+header h1{font-family:'Playfair Display',serif;font-size:1.25rem;color:#f0ede8;}
+.sub{font-size:.62rem;color:#aeaaa6;letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+nav.tabs{display:flex;background:var(--tabbar);}
+nav.tabs button{padding:10px 18px;border:none;background:none;color:#aeaaa6;cursor:pointer;font-family:'Source Sans 3',sans-serif;font-size:.76rem;text-transform:uppercase;letter-spacing:1.5px;border-bottom:3px solid transparent;transition:all .2s;flex:1;-webkit-tap-highlight-color:transparent;}
+nav.tabs button.active{color:#f0ede8;border-bottom-color:var(--accent);}
+nav.tabs button:hover:not(.active){color:#f0ede8;}
+.main{max-width:1000px;margin:0 auto;padding:16px 12px 60px;}
+.panel{display:none;}.panel.active{display:block;}
+.card{background:var(--card-bg);border-radius:10px;padding:15px 17px;box-shadow:0 2px 14px rgba(0,0,0,.3);margin-bottom:13px;border:1px solid var(--border);}
+.card-title{font-family:'Playfair Display',serif;font-size:.88rem;color:var(--text2);margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.alpha-section{margin-bottom:12px;}
+.alpha-section h3{font-size:.63rem;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:5px;}
+.alpha-grid{display:flex;flex-wrap:wrap;gap:4px;}
+.char-btn{width:40px;height:42px;border:2px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.95rem;font-family:'Playfair Display',serif;color:var(--text);transition:all .12s;position:relative;overflow:hidden;user-select:none;-webkit-user-select:none;}
+.char-btn:hover{border-color:var(--accent);}
+.char-btn.has-data{border-color:var(--gold);background:rgba(221,176,64,.12);}
+.char-btn.selected{border-color:var(--accent);background:rgba(232,90,66,.15);box-shadow:0 0 0 2px rgba(232,90,66,.2);}
+.char-btn .cnt{font-size:.45rem;color:var(--gold);margin-top:1px;line-height:1;}
+.char-btn .mp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.draw-area{display:flex;gap:14px;flex-wrap:wrap;}
+.draw-left{flex:0 0 auto;}
+.draw-right{flex:1;min-width:180px;}
+.canvas-wrap{position:relative;display:inline-block;border:2px solid var(--border);border-radius:8px;overflow:hidden;}
+#inkCanvas{display:block;cursor:crosshair;touch-action:none;background:#fff;}
+#guideCanvas{position:absolute;top:0;left:0;pointer-events:none;}
+.char-nav{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.nav-btn{width:36px;height:36px;border:2px solid var(--border);border-radius:7px;background:var(--surface2);cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;color:var(--text);-webkit-tap-highlight-color:transparent;}
+.nav-btn:disabled{opacity:.25;cursor:default;}
+.char-display{font-family:'Playfair Display',serif;font-size:2.3rem;color:var(--accent);min-width:44px;text-align:center;line-height:1;}
+.char-sub{font-size:.67rem;color:var(--text2);text-align:center;margin-top:1px;}
+.draw-info{font-size:.75rem;color:var(--info-text);margin-bottom:7px;padding:6px 8px;background:var(--info-bg);border-radius:5px;border-left:3px solid var(--accent);line-height:1.5;}
+.draw-toolbar{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap;align-items:center;}
+.pen-opts{display:flex;gap:4px;}
+.pen-opt{width:28px;height:28px;border-radius:50%;border:2px solid var(--border);cursor:pointer;background:var(--surface2);display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}
+.pen-opt.active{border-color:var(--text);background:var(--text);}
+.pen-dot{background:var(--text2);border-radius:50%;}
+.pen-opt.active .pen-dot{background:var(--bg);}
+.legend{margin-bottom:7px;padding:7px 9px;background:var(--legend-bg);border-radius:6px;border:1px solid var(--legend-border);font-size:.67rem;color:var(--legend-text);}
+.legend-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.ls{width:20px;height:2px;flex-shrink:0;border-radius:1px;}
+.variants-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.variant-thumb{width:56px;height:64px;border:2px solid var(--border);border-radius:5px;background:#202025;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;}
+.variant-thumb img{max-width:50px;max-height:58px;object-fit:contain;image-rendering:auto;}
+.variant-del{position:absolute;top:0;right:0;width:18px;height:18px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:.58rem;display:flex;align-items:center;justify-content:center;border-radius:0 4px 0 4px;}
+.add-variant{width:46px;height:52px;border:2px dashed var(--border);border-radius:5px;cursor:pointer;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text2);}
+.add-variant:hover{border-color:var(--gold);}
+.btn{padding:8px 15px;border:none;border-radius:7px;cursor:pointer;font-family:'Source Sans 3',sans-serif;font-size:.83rem;font-weight:500;-webkit-tap-highlight-color:transparent;transition:opacity .15s;}
+.btn:active{opacity:.75;}
+.btn-dark{background:var(--text);color:var(--bg);}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-outline{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.btn-outline:hover{border-color:var(--text2);}
+.btn-danger{background:rgba(200,30,40,.15);color:#f09090;border:1.5px solid rgba(200,60,70,.35);}
+.btn-green{background:#1a5a30;color:#90e0a0;}
+.btn-sm{padding:5px 10px;font-size:.75rem;}
+textarea{width:100%;min-height:80px;border:1.5px solid var(--border);border-radius:7px;padding:10px;font-size:.89rem;font-family:'Source Sans 3',sans-serif;resize:vertical;outline:none;background:var(--input-bg);color:var(--text);line-height:1.6;}
+textarea:focus{border-color:var(--accent);}
+.settings-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:9px 0;}
+.sg{display:flex;flex-direction:column;gap:3px;}
+.sg label{font-size:.65rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);}
+.sg input[type=range]{width:88px;accent-color:var(--accent);}
+.sg select{border:1.5px solid var(--border);border-radius:5px;padding:5px 7px;font-family:inherit;font-size:.79rem;outline:none;background:var(--input-bg);color:var(--text);}
+.sg select:focus{border-color:var(--accent);}
+.toggle-row{display:flex;align-items:center;gap:7px;padding:5px 0;}
+.toggle-row label{font-size:.75rem;color:var(--text2);cursor:pointer;user-select:none;}
+.toggle-sw{width:34px;height:18px;background:var(--border);border-radius:9px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.toggle-sw.on{background:var(--accent);}
+.toggle-sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .2s;}
+.toggle-sw.on::after{left:18px;}
+.val-label{font-size:.67rem;color:var(--text2);}
+.pages-wrap{display:flex;flex-direction:column;gap:18px;}
+.pages-wrap canvas{max-width:100%;height:auto;display:block;}
+.page-canvas-wrap{box-shadow:0 4px 22px rgba(0,0,0,.55);border-radius:4px;overflow:hidden;width:100%;}
+.dl-info{margin-top:11px;padding:10px 12px;background:var(--info-bg);border-radius:7px;border:1px solid var(--info-border);font-size:.79rem;color:var(--info-text);line-height:1.75;}
+.hw-list{display:flex;flex-direction:column;gap:7px;}
+.hw-item{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);}
+.hw-item.active-hw{border-color:var(--accent);background:rgba(232,90,66,.1);}
+.hw-name{font-family:'Playfair Display',serif;font-size:.93rem;color:var(--text);}
+.hw-stats{font-size:.67rem;color:var(--text2);margin-top:2px;}
+.progress-bg{background:var(--border);border-radius:3px;height:4px;overflow:hidden;width:110px;margin-top:3px;}
+.progress-fill{background:var(--gold);height:100%;border-radius:3px;}
+.new-hw-form{display:flex;gap:7px;align-items:center;margin-top:10px;}
+.new-hw-form input{flex:1;border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-family:inherit;font-size:.87rem;outline:none;background:var(--input-bg);color:var(--text);}
+.new-hw-form input:focus{border-color:var(--accent);}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:var(--bg);padding:9px 18px;border-radius:16px;font-size:.81rem;transition:transform .3s;pointer-events:none;z-index:9999;max-width:90vw;text-align:center;font-weight:500;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.vdiv{width:1px;height:22px;background:var(--border);margin:0 2px;}
+.eraser-active{background:rgba(232,90,66,.2)!important;border-color:var(--accent)!important;color:var(--accent)!important;}
+.tip-box{margin-top:9px;font-size:.74rem;color:var(--text2);line-height:1.6;background:var(--surface2);padding:8px 10px;border-radius:6px;border:1px solid var(--border);}
+.missing-chars{font-size:.73rem;color:var(--accent);font-style:italic;}
+.sep{height:1px;background:var(--border);margin:8px 0;}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>&#10004; Slow2Madness</h1><div class="sub">Deine echte Handschrift digital</div></div>
+  <button class="btn btn-outline btn-sm" onclick="toggleTheme()" id="themeBtn" style="color:#f0ede8;border-color:#6a6460;">&#9790; Light</button>
+</header>
+<nav class="tabs" id="mainTabs">
+  <button class="active" data-tab="manage">&#128218; Handschriften</button>
+  <button data-tab="draw">&#9999; Zeichnen</button>
+  <button data-tab="write">&#128196; Generieren</button>
+</nav>
+<div class="main">
+
+<!-- MANAGE -->
+
+<div class="panel active" id="tab-manage">
+  <div class="card">
+    <div class="card-title">&#128218; Meine Handschriften</div>
+    <div class="hw-list" id="hwList"></div>
+    <div class="new-hw-form">
+      <input type="text" id="newHwName" placeholder="Name der neuen Handschrift&#8230;">
+      <button class="btn btn-accent" onclick="createHandwriting()">+ Erstellen</button>
+    </div>
+  </div>
+  <div class="card" style="border-color:rgba(221,176,64,.3);background:rgba(221,176,64,.05);">
+    <div style="font-size:.81rem;line-height:1.7;color:var(--text);">
+      <strong style="color:var(--gold);">&#128190; Backup:</strong> Sichere deine Buchstaben als JSON-Datei.<br>
+      <div class="row" style="margin-top:7px;">
+        <button class="btn btn-outline btn-sm" onclick="exportData()">&#128228; Backup speichern</button>
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-block;">&#128229; Backup laden<input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"></label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DRAW -->
+
+<div class="panel" id="tab-draw">
+  <div class="card">
+    <div class="card-title">&#9999; Buchstaben zeichnen
+      <span style="margin-left:auto;font-size:.71rem;color:var(--text2)">Aktiv: <strong id="currentHwLabel">&#8211;</strong></span>
+    </div>
+    <div id="allGrids"></div>
+  </div>
+  <div class="card">
+    <div class="char-nav">
+      <button class="nav-btn" id="btnPrev" onclick="navigateChar(-1)" disabled>&#8592;</button>
+      <div style="flex:1;text-align:center;">
+        <div class="char-display" id="selectedCharLabel">&#8211;</div>
+        <div class="char-sub" id="charNavSub">W&#228;hle einen Buchstaben</div>
+      </div>
+      <button class="nav-btn" id="btnNext" onclick="navigateChar(1)" disabled>&#8594;</button>
+    </div>
+    <div class="draw-info" id="drawInfo">&#128070; W&#228;hle einen Buchstaben oder navigiere mit &#8592; &#8594;</div>
+    <div class="draw-area">
+      <div class="draw-left">
+        <div class="draw-toolbar">
+          <div class="pen-opts" id="penOpts">
+            <div class="pen-opt active" data-size="2.5"><div class="pen-dot" style="width:3px;height:3px"></div></div>
+            <div class="pen-opt" data-size="5"><div class="pen-dot" style="width:7px;height:7px"></div></div>
+            <div class="pen-opt" data-size="9"><div class="pen-dot" style="width:11px;height:11px"></div></div>
+          </div>
+          <div class="vdiv"></div>
+          <button class="btn btn-outline btn-sm" id="eraserBtn" onclick="toggleEraser()">&#9645; Rad.</button>
+          <button class="btn btn-outline btn-sm" onclick="clearInk()">&#128465;</button>
+          <div class="vdiv"></div>
+          <div class="sg" style="flex-direction:row;align-items:center;gap:5px;">
+            <label style="font-size:.63rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);white-space:nowrap;">Feldgr&#246;&#223;e</label>
+            <select id="canvasSizeSelect" onchange="resizeDrawCanvas(this.value)" style="border:1.5px solid var(--border);border-radius:5px;padding:3px 6px;font-family:inherit;font-size:.75rem;outline:none;background:var(--input-bg);color:var(--text);">
+              <option value="140">Klein</option>
+              <option value="200" selected>Mittel</option>
+              <option value="280">Gro&#223;</option>
+              <option value="380">XL</option>
+            </select>
+          </div>
+        </div>
+        <div class="legend">
+          <strong style="font-size:.63rem;text-transform:uppercase;letter-spacing:1px;">Hilfslinien</strong>
+          <div class="legend-row"><div class="ls" style="border-top:1.5px dashed rgba(80,130,220,.7)"></div>Oberl&#228;nge &#8212; b d h l</div>
+          <div class="legend-row"><div class="ls" style="background:rgba(80,130,220,.5)"></div>Mittellinie &#8212; a e m n o</div>
+          <div class="legend-row"><div class="ls" style="background:rgba(80,130,220,.9)"></div><strong>Grundlinie</strong></div>
+          <div class="legend-row"><div class="ls" style="border-top:1.5px dashed rgba(80,130,220,.4)"></div>Unterl&#228;nge &#8212; g j p q y</div>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="inkCanvas" width="200" height="240"></canvas>
+          <canvas id="guideCanvas" width="200" height="240"></canvas>
+        </div>
+        <div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;">
+          <button class="btn btn-accent btn-sm" id="saveVariantBtn" onclick="saveVariant()" disabled>&#128190; Speichern</button>
+          <button class="btn btn-outline btn-sm" id="saveNextBtn" onclick="saveAndNext()" disabled>&#128190; + Weiter &#8594;</button>
+        </div>
+      </div>
+      <div class="draw-right">
+        <div style="font-size:.67rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:5px;">Gespeicherte Varianten</div>
+        <div class="variants-row" id="variantsRow"><div style="color:var(--text2);font-size:.77rem;font-style:italic">Noch keine</div></div>
+        <div class="tip-box">
+          &#128161; <strong>Gr&#246;&#223;en einhalten:</strong><br>
+          &#8226; a e m n o r&#8230; &#8594; Grund- bis Mittellinie<br>
+          &#8226; b d h l k&#8230; &#8594; bis Oberl&#228;ngenlinie<br>
+          &#8226; Gro&#223;buchstaben &#8594; bis Oberl&#228;ngenlinie<br>
+          &#8226; g j p q y &#8594; Abstrich unter Grundlinie<br>
+          &#8226; Nur die schwarze Tinte wird gespeichert.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WRITE -->
+
+<div class="panel" id="tab-write">
+  <div class="card">
+    <div class="card-title">&#128196; Text generieren</div>
+    <textarea id="inputText" placeholder="Text hier eingeben&#8230;">Hallo! Das ist meine eigene Handschrift.</textarea>
+    <div class="settings-row">
+      <div class="sg">
+        <label>x-H&#246;he</label>
+        <input type="range" id="charSize" min="15" max="70" value="22" oninput="updateLabels()">
+        <span class="val-label" id="charSizeLabel">22px</span>
+      </div>
+      <div class="sg">
+        <label>Buchst.-Abstand</label>
+        <input type="range" id="charSpacing" min="-30" max="10" value="-1" oninput="updateLabels()">
+        <span class="val-label" id="charSpacingLabel">-1px</span>
+      </div>
+      <div class="sg">
+        <label>Wortabstand</label>
+        <input type="range" id="wordSpacing" min="0.1" max="1.2" step="0.05" value="0.55" oninput="updateLabels()">
+        <span class="val-label" id="wordSpacingLabel">0.55&#215;</span>
+      </div>
+      <div class="sg">
+        <label>Zeilenabstand</label>
+        <input type="range" id="lineSpacingMult" min="1.5" max="3.5" step="0.1" value="2.4" oninput="updateLabels()">
+        <span class="val-label" id="lineSpacingLabel">2.4&#215;</span>
+      </div>
+      <div class="sg">
+        <label>Schriftdicke</label>
+        <input type="range" id="strokeScale" min="0.3" max="3.0" step="0.1" value="1.0" oninput="document.getElementById('strokeScaleLabel').textContent=(+this.value).toFixed(1)+'x'">
+        <span class="val-label" id="strokeScaleLabel">1.0x</span>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="sg">
+        <label>Papier</label>
+        <select id="paperStyle">
+          <optgroup label="Liniert – Warm">
+            <option value="gn-lined" selected>GoodNotes Creme</option>
+            <option value="vintage-lined">Vintage / Vergilbt</option>
+            <option value="warm-beige">Warm Beige</option>
+            <option value="rose-lined">Ros&#233; Liniert</option>
+            <option value="kraft-lined">Kraftpapier Liniert</option>
+          </optgroup>
+          <optgroup label="Liniert – K&#252;hl">
+            <option value="school-ruled">Schulheft Wei&#223;</option>
+            <option value="college-ruled">College-Liniert</option>
+            <option value="blue-ruled">Notizbuch Blau</option>
+            <option value="gray-ruled">Notizbuch Grau</option>
+            <option value="green-ruled">Notizbuch Gr&#252;n</option>
+          </optgroup>
+          <optgroup label="Kariert">
+            <option value="gn-grid">Karo</option>
+          </optgroup>
+          <optgroup label="Leer">
+            <option value="plain-white">Leer Wei&#223;</option>
+            <option value="plain-cream">Leer Creme</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="sg">
+        <label>Tintenfarbe</label>
+        <select id="inkColor">
+          <option value="#0a0502">Tintenschwarz</option>
+          <option value="#1a1f6e">Dunkelblau</option>
+          <option value="#0d3b6e">Marineblau</option>
+          <option value="#1a4a1a">Dunkelgr&#252;n</option>
+          <option value="#6e1a1a">Burgunder</option>
+          <option value="#4a2800">Dunkelbraun</option>
+          <option value="#555555">Bleistift Grau</option>
+        </select>
+      </div>
+      <div class="sg">
+        <label>Variante</label>
+        <select id="randomMode">
+          <option value="random">Zuf&#228;llig</option>
+          <option value="first">Immer erste</option>
+        </select>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:4px 0;">
+      <div>
+        <div class="toggle-row">
+          <div class="toggle-sw" id="jitterToggle" onclick="toggleSwitch('jitterToggle','jitterControls')"></div>
+          <label onclick="toggleSwitch('jitterToggle','jitterControls')">Zeilenversatz</label>
+        </div>
+        <div id="jitterControls" style="display:none;margin-top:2px;">
+          <div class="sg"><label>St&#228;rke</label>
+            <input type="range" id="jitterAmt" min="0" max="8" step="0.5" value="2.5" oninput="document.getElementById('jitterAmtLabel').textContent=this.value+'px'">
+            <span class="val-label" id="jitterAmtLabel">2.5px</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="toggle-row">
+          <div class="toggle-sw" id="slantToggle" onclick="toggleSwitch('slantToggle','slantControls')"></div>
+          <label onclick="toggleSwitch('slantToggle','slantControls')">Schr&#228;glage</label>
+        </div>
+        <div id="slantControls" style="display:none;margin-top:2px;">
+          <div class="sg"><label>Winkel</label>
+            <input type="range" id="slantDeg" min="-15" max="15" step="0.5" value="-5" oninput="document.getElementById('slantDegLabel').textContent=this.value+'&#176;'">
+            <span class="val-label" id="slantDegLabel">-5&#176;</span>
+          </div>
+          <div class="sg" style="margin-top:3px;"><label>Schwankung &#177;</label>
+            <input type="range" id="slantVar" min="0" max="8" step="0.5" value="2" oninput="document.getElementById('slantVarLabel').textContent=this.value+'&#176;'">
+            <span class="val-label" id="slantVarLabel">2&#176;</span>
+          </div>
+        </div>
+      </div>
+
+  <!-- Unsauberkeiten -->
+  <div>
+    <div class="toggle-row">
+      <div class="toggle-sw" id="errorToggle" onclick="toggleSwitch('errorToggle','errorControls')"></div>
+      <label onclick="toggleSwitch('errorToggle','errorControls')">Unsauberkeiten (Kommas)</label>
+    </div>
+    <div id="errorControls" style="display:none;margin-top:3px;">
+      <div class="sg">
+        <label>Fehlerindex (max 2.9 / 100 Wörter)</label>
+        <input type="range" id="errorRate" min="0.1" max="2.9" step="0.1" value="1.5" oninput="document.getElementById('errorRateLabel').textContent=this.value">
+        <span class="val-label" id="errorRateLabel">1.5</span>
+      </div>
+    </div>
+  </div></div>
+<div class="sep"></div>
+<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+  <button class="btn btn-outline btn-sm" onclick="savePresetFile()">&#128190; Einstellungen speichern</button>
+  <label class="btn btn-outline btn-sm" style="cursor:pointer;display:inline-block;">&#128196; Einstellungen laden<input type="file" id="presetFileInput" accept=".json" style="display:none" onchange="loadPresetFile(event)"></label>
+  <button class="btn btn-outline btn-sm" onclick="resetPreset()">&#8635; Standard</button>
+</div>
+<div class="row" style="margin-top:10px;">
+  <button class="btn btn-accent" onclick="generateText()">&#9998; Generieren</button>
+  <span class="missing-chars" id="missingCharsLabel"></span>
+</div>
+
+  </div>
+  <div class="card" id="outputCard" style="display:none">
+    <div class="card-title">Ergebnis &#8212; <span id="pageCountLabel"></span></div>
+    <div class="pages-wrap" id="pagesWrap"></div>
+    <div class="dl-info">
+      <button class="btn btn-green btn-sm" onclick="downloadPDF()" style="margin:2px 0;">&#8595; PDF herunterladen</button>
+      &nbsp;
+      <span id="pngBtns"></span>
+    </div>
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════════════════
+const DC_W=200,DC_H=240,DC_ASCENDER=38,DC_MIDLINE=100,DC_BASELINE=148,DC_DESCEND=188,DC_XH=48;
+var CUR_W=200,CUR_H=240,CUR_ASCENDER=38,CUR_MIDLINE=100,CUR_BASELINE=148,CUR_DESCEND=188,CUR_XH=48;
+// Current canvas dimensions (change with resizeDrawCanvas)
+var CUR_W=200,CUR_H=240,CUR_ASCENDER=38,CUR_MIDLINE=100,CUR_BASELINE=148,CUR_DESCEND=188,CUR_XH=48;
+const A4_W=1240,A4_H=1754,A4_ML=112,A4_MR=80,A4_MT=80,A4_MB=80,A4_TW=A4_W-A4_ML-A4_MR;
+
+const LOWER='abcdefghijklmnopqrstuvwxyzäöüßàâçèéêëîïôùûœ'.split('');
+const UPPER='ABCDEFGHIJKLMNOPQRSTUVWXYZÄÖÜÀÂÇÈÉÊÎÔÙÛŒ'.split('');
+const DIGITS=['0','1','2','3','4','5','6','7','8','9'];
+const PUNCT=['.', ',', '!', '?', ';', ':', '-', '–', '—', '…', '·', '•'];
+const QUOTES=['"', "'", '\u2019', '\u201c', '\u201d', '\u201e', '\u201a', '\u2018', '«', '»'];
+const BRACKETS=['(', ')', '[', ']', '{', '}'];
+const MATH=['+', '=', '<', '>', '%', '°', '~', '^', '*', '±', '×', '÷', '≠'];
+const SYMBOLS=['@', '#', '&', '_', '/', '|', '§', '€', '$', '£'];
+const EXTRA=[...DIGITS,...PUNCT,...QUOTES,...BRACKETS,...MATH,...SYMBOLS];
+const SUP_DIGITS=['¹','²','³','⁴','⁵','⁶','⁷','⁸','⁹'];
+const SUB_DIGITS=['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+const CHEM_SPECIAL=['→','⇌','⁺','⁻','⁰'];
+const ALL_CHARS=[...LOWER,...UPPER,...EXTRA,...SUP_DIGITS,...SUB_DIGITS,...CHEM_SPECIAL];
+const CHAR_GROUPS=[
+{label:'Kleinbuchstaben DE',chars:'abcdefghijklmnopqrstuvwxyzäöüß'.split(''),id:'gridLower'},
+{label:'Französisch (min.)',chars:'àâçèéêëîïôùûœ'.split(''),id:'gridLowerFR'},
+{label:'Großbuchstaben',chars:UPPER,id:'gridUpper'},
+{label:'Zahlen',chars:DIGITS,id:'gridDigits'},
+{label:'Satzzeichen',chars:PUNCT,id:'gridPunct'},
+{label:'Anführungszeichen',chars:QUOTES,id:'gridQuotes'},
+{label:'Klammern',chars:BRACKETS,id:'gridBrackets'},
+{label:'Mathematik & Symbole',chars:[...MATH,...SYMBOLS],id:'gridMath'},
+{label:'Chemie – Hochgestellt ¹²³...',chars:SUP_DIGITS,id:'gridSupDigits'},
+{label:'Chemie – Tiefgestellt ₁₂₃...',chars:SUB_DIGITS,id:'gridSubDigits'},
+{label:'Chemie – Pfeile & Ladung',chars:CHEM_SPECIAL,id:'gridChemSpecial'},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// CHAR TYPE SYSTEM
+// ═══════════════════════════════════════════════════════════════
+function getCharType(ch){
+const c=ch.codePointAt(0);
+const T={
+46:{g:.20,a:.20,b:0},183:{g:.18,a:1.09,b:0},8226:{g:.30,a:1.15,b:0},
+45:{g:.22,a:.50,b:0},8211:{g:.22,a:.50,b:0},8212:{g:.22,a:.50,b:0},
+8594:{g:.22,a:.60,b:0},8652:{g:.30,a:.60,b:0},
+8230:{g:.20,a:.20,b:0},95:{g:.10,a:.00,b:.12},
+44:{g:.45,a:.20,b:.35},59:{g:.90,a:.90,b:.35},
+8218:{g:.30,a:.20,b:0},8222:{g:.30,a:.20,b:0},
+58:{g:.85,a:.85,b:0},43:{g:.85,a:.85,b:0},61:{g:.65,a:.70,b:0},
+60:{g:.85,a:.85,b:0},62:{g:.85,a:.85,b:0},126:{g:.25,a:1.125,b:0},
+42:{g:.65,a:.80,b:0},215:{g:.65,a:.70,b:0},247:{g:.65,a:.70,b:0},
+177:{g:.85,a:.85,b:0},8800:{g:.85,a:.85,b:0},
+37:{g:1.8,a:1.8,b:0},47:{g:1.8,a:1.8,b:0},92:{g:1.8,a:1.8,b:0},
+124:{g:1.8,a:1.8,b:0},64:{g:2.0,a:2.0,b:0},35:{g:2.0,a:2.0,b:0},
+38:{g:2.0,a:2.0,b:0},36:{g:2.0,a:2.0,b:0},8364:{g:2.0,a:2.0,b:0},
+163:{g:2.0,a:2.0,b:0},167:{g:2.0,a:2.0,b:0},
+94:{g:.45,a:1.8,b:0},176:{g:.38,a:1.9,b:0},
+33:{g:2.2,a:2.2,b:0},63:{g:2.2,a:2.2,b:0},
+40:{g:2.2,a:2.2,b:.30},41:{g:2.2,a:2.2,b:.30},
+91:{g:2.2,a:2.2,b:.30},93:{g:2.2,a:2.2,b:.30},
+123:{g:2.2,a:2.2,b:.30},125:{g:2.2,a:2.2,b:.30},
+34:{g:.42,a:2.05,b:0},39:{g:.38,a:2.05,b:0},
+// Superscript digits ¹²³⁴⁵⁶⁷⁸⁹ and ⁰
+185:{g:.40,a:1.95,b:0},178:{g:.40,a:1.95,b:0},179:{g:.40,a:1.95,b:0},
+8308:{g:.40,a:1.95,b:0},8309:{g:.40,a:1.95,b:0},8310:{g:.40,a:1.95,b:0},
+8311:{g:.40,a:1.95,b:0},8312:{g:.40,a:1.95,b:0},8313:{g:.40,a:1.95,b:0},
+8304:{g:.40,a:1.95,b:0},
+// Superscript + and -
+8314:{g:.35,a:1.95,b:0},8315:{g:.35,a:1.95,b:0},
+// Subscript digits ₀-₉
+8320:{g:.40,a:.40,b:0},8321:{g:.40,a:.40,b:0},8322:{g:.40,a:.40,b:0},
+8323:{g:.40,a:.40,b:0},8324:{g:.40,a:.40,b:0},8325:{g:.40,a:.40,b:0},
+8326:{g:.40,a:.40,b:0},8327:{g:.40,a:.40,b:0},8328:{g:.40,a:.40,b:0},
+8329:{g:.40,a:.40,b:0},
+8216:{g:.38,a:2.05,b:0},8217:{g:.38,a:2.05,b:0},
+8220:{g:.42,a:2.05,b:0},8221:{g:.42,a:2.05,b:0},
+171:{g:.50,a:1.50,b:0},187:{g:.50,a:1.50,b:0},
+};
+const e=T[c];
+return e?{glyphH:e.g,aboveBase:e.a,belowBase:e.b}:null;
+}
+
+const CHAR_NAMES={
+34:'"  gerades Anf.-zeichen',39:"'  Apostroph",
+8216:'\u2018  einfach OBEN öffnend',8217:'\u2019  einfach OBEN schließend',
+8220:'\u201c  doppelt OBEN öffnend',8221:'\u201d  doppelt OBEN schließend',
+8222:'\u201e  doppelt UNTEN öffnend',8218:'\u201a  einfach UNTEN öffnend',
+171:'«  Guillemet «',187:'»  Guillemet »',
+8211:'–  Gedankenstrich',8212:'—  langer Gedankenstrich',
+8230:'…  Auslassungspunkte',
+8594:'→  Reaktionspfeil (Chemie) – auf Höhe der Mittellinie zeichnen',
+8652:'⇌  Gleichgewichtspfeil – auf Höhe der Mittellinie zeichnen',
+8314:'⁺  Hochgestellt + (Ladung) – KLEIN und HOCH zeichnen',
+8315:'⁻  Hochgestellt − (Ladung/Elektron) – KLEIN und HOCH zeichnen',
+8304:'⁰  Hochgestellt 0 – KLEIN und HOCH zeichnen',
+185:'¹  Hochgestellt 1 – KLEIN und HOCH zeichnen',
+178:'²  Hochgestellt 2 – KLEIN und HOCH zeichnen',
+179:'³  Hochgestellt 3 – KLEIN und HOCH zeichnen',
+8321:'₁  Tiefgestellt 1 – KLEIN und UNTEN zeichnen (unter Mittellinie)',
+8322:'₂  Tiefgestellt 2 – KLEIN und UNTEN zeichnen',
+8323:'₃  Tiefgestellt 3 – KLEIN und UNTEN zeichnen',
+};
+
+const ZONE_HINTS={
+super:'Klein und HOCH zeichnen – im gelben Bereich OBEN!',
+sub_low:'Klein und tief – direkt auf/unter der Grundlinie.',
+baseline:'Sehr klein direkt AUF der Grundlinie.',
+sub:'Zwischen Grund- und Mittellinie, Abstrich nach unten.',
+xheight:'Zwischen Grundlinie und Mittellinie (wie ein "a").',
+ascender:'Von der Grundlinie bis zur Oberlängenlinie (wie "h").',
+full:'Volle Höhe – Grundlinie bis Oberlängenlinie.',
+};
+
+function getZoneType(ct){
+if(!ct)return null;
+// Superscript: small glyph floating high above baseline
+if(ct.glyphH<=0.42&&ct.aboveBase>=1.85)return 'super';
+// Subscript: small glyph sitting at bottom of x-zone
+if(ct.glyphH<=0.42&&ct.aboveBase<=0.45&&ct.belowBase===0)return 'sub_low';
+if(ct.glyphH<0.50&&ct.aboveBase/ct.glyphH>2.5)return 'super';
+if(ct.glyphH<0.40&&ct.aboveBase<0.30)return 'sub_low';
+if(ct.glyphH<0.35)return 'baseline';
+if(ct.belowBase>0.20&&ct.aboveBase<1.0)return 'sub';
+if(ct.aboveBase<=1.05)return 'xheight';
+if(ct.aboveBase<=1.90)return 'ascender';
+return 'full';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CANVAS SETUP
+// ═══════════════════════════════════════════════════════════════
+var inkCanvas, inkCtx, guideCanvas, guideCtx;
+
+function drawGuides(){
+guideCtx.clearRect(0,0,CUR_W,CUR_H);
+const L=(y,color,lw,dash)=>{
+guideCtx.save();guideCtx.strokeStyle=color;guideCtx.lineWidth=lw;
+guideCtx.setLineDash(dash||[]);
+guideCtx.beginPath();guideCtx.moveTo(4,y);guideCtx.lineTo(CUR_W-4,y);guideCtx.stroke();
+guideCtx.restore();
+};
+L(CUR_ASCENDER,'rgba(50,90,200,.4)',1,[5,4]);
+L(CUR_MIDLINE,'rgba(50,90,200,.55)',1,[]);
+L(CUR_BASELINE,'rgba(50,90,200,.85)',2,[]);
+L(CUR_DESCEND,'rgba(50,90,200,.30)',1,[5,4]);
+guideCtx.save();guideCtx.font='9px sans-serif';guideCtx.textAlign='right';guideCtx.setLineDash([]);
+guideCtx.fillStyle='rgba(50,90,200,.55)';guideCtx.fillText('Oberl.',CUR_W-3,CUR_ASCENDER-3);
+guideCtx.fillStyle='rgba(50,90,200,.50)';guideCtx.fillText('Mittel',CUR_W-3,CUR_MIDLINE-3);
+guideCtx.fillStyle='rgba(50,90,200,.80)';guideCtx.fillText('Grund',CUR_W-3,CUR_BASELINE-3);
+guideCtx.fillStyle='rgba(50,90,200,.40)';guideCtx.fillText('Unterl.',CUR_W-3,CUR_DESCEND-3);
+guideCtx.restore();
+}
+
+function resizeDrawCanvas(sizeStr){
+var sz=parseInt(sizeStr)||200;
+CUR_W=sz;
+CUR_H=Math.round(sz*240/200);
+CUR_ASCENDER=Math.round(CUR_H*38/240);
+CUR_MIDLINE=Math.round(CUR_H*100/240);
+CUR_BASELINE=Math.round(CUR_H*148/240);
+CUR_DESCEND=Math.round(CUR_H*188/240);
+CUR_XH=Math.round(CUR_H*48/240);
+inkCanvas.width=CUR_W;inkCanvas.height=CUR_H;
+guideCanvas.width=CUR_W;guideCanvas.height=CUR_H;
+inkCanvas.style.width=CUR_W+'px';inkCanvas.style.height=CUR_H+'px';
+guideCanvas.style.width=CUR_W+'px';guideCanvas.style.height=CUR_H+'px';
+clearInk();
+if(selectedChar)highlightZone(selectedChar);
+else drawGuides();
+}
+
+function highlightZone(ch){
+// Always start fresh: clear canvas completely, redraw guides, then yellow zone
+guideCtx.clearRect(0,0,CUR_W,CUR_H);
+// Redraw guide lines cleanly
+var L=function(y,color,lw,dash){
+guideCtx.save();guideCtx.strokeStyle=color;guideCtx.lineWidth=lw;
+guideCtx.setLineDash(dash||[]);
+guideCtx.beginPath();guideCtx.moveTo(4,y);guideCtx.lineTo(CUR_W-4,y);guideCtx.stroke();
+guideCtx.restore();
+};
+L(CUR_ASCENDER,'rgba(50,90,200,.4)',1,[5,4]);
+L(CUR_MIDLINE,'rgba(50,90,200,.55)',1,[]);
+L(CUR_BASELINE,'rgba(50,90,200,.85)',2,[]);
+L(CUR_DESCEND,'rgba(50,90,200,.30)',1,[5,4]);
+// Now draw the yellow zone if char type known
+var ct=getCharType(ch);
+if(!ct)return;
+var zt=getZoneType(ct);
+var yTop,yBot;
+if(zt==='super'){
+yBot=CUR_BASELINE-(ct.aboveBase-ct.glyphH)*CUR_XH;
+yTop=yBot-ct.glyphH*CUR_XH;
+}else{
+yTop=CUR_BASELINE-ct.glyphH*CUR_XH;
+yBot=CUR_BASELINE+ct.belowBase*CUR_XH;
+}
+yTop=Math.max(2,Math.round(yTop));
+yBot=Math.min(CUR_H-2,Math.round(yBot));
+// Single solid yellow fill - no transparency stacking
+guideCtx.save();
+guideCtx.fillStyle='rgba(255,200,40,0.28)';
+guideCtx.fillRect(4,yTop,CUR_W-8,yBot-yTop);
+guideCtx.strokeStyle='rgba(210,160,0,0.9)';
+guideCtx.lineWidth=1.5;
+guideCtx.setLineDash([]);
+guideCtx.strokeRect(4,yTop,CUR_W-8,yBot-yTop);
+guideCtx.restore();
+}
+
+function clearInk(){
+inkCtx.clearRect(0,0,CUR_W,CUR_H);
+inkCtx.fillStyle='#ffffff';
+inkCtx.fillRect(0,0,CUR_W,CUR_H);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DB
+// ═══════════════════════════════════════════════════════════════
+let db={handwritings:[],activeHwId:null};
+function getActiveHw(){return db.handwritings.find(h=>h.id===db.activeHwId)||null;}
+function saveDB(){
+try{localStorage.setItem('hwS8',JSON.stringify(db));}
+catch(e){toast('⚠ Speicher voll! Bitte Backup erstellen.');}
+}
+function loadDB(){
+try{const s=localStorage.getItem('hwS8');if(s)db=JSON.parse(s);}catch(e){}
+for(const k of['hwS7','hwS6','hwStudio5']){
+if(!(db.handwritings&&db.handwritings.length)){
+try{const o=JSON.parse(localStorage.getItem(k)||'{}');if((o.handwritings&&o.handwritings.length)){db=o;break;}}catch(e){}
+}
+}
+if(!(db.handwritings&&db.handwritings.length)){db={handwritings:[],activeHwId:null};createHandwriting('Meine Handschrift',false);}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TABS – fixed for CodePen compatibility
+// ═══════════════════════════════════════════════════════════════
+function showTab(id, btn){
+document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+document.querySelectorAll('#mainTabs button').forEach(b=>b.classList.remove('active'));
+const panel=document.getElementById('tab-'+id);
+if(panel)panel.classList.add('active');
+if(btn)btn.classList.add('active');
+if(id==='draw'){refreshAlphabetGrid();clearInk();drawGuides();}
+if(id==='manage')renderHwList();
+if(id==='write')updateLabels();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// MANAGE
+// ═══════════════════════════════════════════════════════════════
+function createHandwriting(name,doRefresh=true){
+const n=name||(document.getElementById('newHwName')?document.getElementById('newHwName').value.trim():'');
+if(!n){toast('Bitte einen Namen eingeben.');return;}
+const id='hw-'+Date.now();
+db.handwritings.push({id,name:n,chars:{}});
+if(!db.activeHwId)db.activeHwId=id;
+saveDB();
+if(doRefresh){document.getElementById('newHwName').value='';renderHwList();toast('"'+n+'" erstellt!');}
+}
+function setActiveHw(id){db.activeHwId=id;saveDB();renderHwList();updateDrawLabel();}
+function deleteHw(id,name){
+if(!window.confirm('Handschrift "'+name+'" wirklich löschen?'))return;
+db.handwritings=db.handwritings.filter(h=>h.id!==id);
+if(db.activeHwId===id)db.activeHwId=(db.handwritings[0]?db.handwritings[0].id:null);
+saveDB();renderHwList();toast('Gelöscht.');
+}
+function esc(s){return s.replace(/&/g,'&').replace(/</g,'<');}
+function renderHwList(){
+const el=document.getElementById('hwList');el.innerHTML='';
+if(!db.handwritings.length){
+el.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:.84rem;">Noch keine Handschriften.</div>';return;
+}
+db.handwritings.forEach(hw=>{
+const total=ALL_CHARS.length;
+const done=Object.keys(hw.chars).filter(c=>(hw.chars[c]&&hw.chars[c].length>0)).length;
+const pct=Math.round(done/total*100);
+const div=document.createElement('div');
+div.className='hw-item'+(hw.id===db.activeHwId?' active-hw':'');
+const info=document.createElement('div');info.style.flex='1';
+info.innerHTML='<div class="hw-name">'+esc(hw.name)+'</div><div class="hw-stats">'+done+'/'+total+' Zeichen ('+pct+'%)</div><div class="progress-bg"><div class="progress-fill" style="width:'+pct+'%"></div></div>';
+div.appendChild(info);
+const btns=document.createElement('div');btns.style.cssText='display:flex;gap:5px;align-items:center;flex-shrink:0;';
+if(hw.id!==db.activeHwId){
+const bA=document.createElement('button');bA.className='btn btn-accent btn-sm';bA.textContent='Aktiv';
+bA.onclick=()=>setActiveHw(hw.id);btns.appendChild(bA);
+}else{
+const sp=document.createElement('span');sp.style.cssText='font-size:.7rem;color:var(–accent);font-weight:600;';sp.textContent='✓ Aktiv';btns.appendChild(sp);
+}
+const bD=document.createElement('button');bD.className='btn btn-danger btn-sm';bD.textContent='🗑';
+bD.onclick=()=>deleteHw(hw.id,hw.name);btns.appendChild(bD);
+div.appendChild(btns);el.appendChild(div);
+});
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ALPHABET GRID
+// ═══════════════════════════════════════════════════════════════
+function buildGrid(chars,cid){
+const cont=document.getElementById(cid);
+if(!cont)return;
+cont.innerHTML='';
+const hw=getActiveHw();
+chars.forEach(ch=>{
+const btn=document.createElement('div');btn.className='char-btn';
+const variants=(hw&&hw.chars&&hw.chars[ch]?hw.chars[ch]:[]);
+if(variants.length)btn.classList.add('has-data');
+if(ch===selectedChar)btn.classList.add('selected');
+if(variants.length){
+const v0=variants[0];
+const src=typeof v0==='string'?v0:v0.dataURL;
+const im=document.createElement('img');im.style.cssText='width:36px;height:38px;object-fit:contain;position:absolute;image-rendering:auto;';im.src=src;
+const mp=document.createElement('div');mp.className='mp';mp.appendChild(im);btn.appendChild(mp);
+const cnt=document.createElement('div');cnt.className='cnt';cnt.textContent='×'+variants.length;btn.appendChild(cnt);
+}else{btn.textContent=ch;}
+btn.addEventListener('click',()=>selectChar(ch));
+cont.appendChild(btn);
+});
+}
+function refreshAlphabetGrid(){
+const container=document.getElementById('allGrids');
+if(!container)return;
+CHAR_GROUPS.forEach(g=>{
+let sec=document.getElementById(g.id+'_sec');
+if(!sec){
+sec=document.createElement('div');sec.className='alpha-section';sec.id=g.id+'_sec';
+const h=document.createElement('h3');h.textContent=g.label;sec.appendChild(h);
+const grid=document.createElement('div');grid.className='alpha-grid';grid.id=g.id;sec.appendChild(grid);
+container.appendChild(sec);
+}
+buildGrid(g.chars,g.id);
+});
+updateDrawLabel();
+}
+function updateDrawLabel(){document.getElementById('currentHwLabel').textContent=(getActiveHw()?getActiveHw().name:'–');}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAR NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+let selectedChar=null;
+function getCharIdx(){return ALL_CHARS.indexOf(selectedChar);}
+function navigateChar(d){const i=getCharIdx();const ni=i+d;if(ni>=0&&ni<ALL_CHARS.length)selectChar(ALL_CHARS[ni]);}
+function updateNavBtns(){
+const i=getCharIdx(),ok=i>=0;
+document.getElementById('btnPrev').disabled=!ok||i===0;
+document.getElementById('btnNext').disabled=!ok||i===ALL_CHARS.length-1;
+document.getElementById('saveVariantBtn').disabled=!ok;
+document.getElementById('saveNextBtn').disabled=!ok;
+if(ok){
+let sec='Sonderz.';
+for(const g of CHAR_GROUPS){if(g.chars.includes(selectedChar)){sec=g.label;break;}}
+document.getElementById('charNavSub').textContent=(i+1)+'/'+ALL_CHARS.length+' · '+sec;
+}else document.getElementById('charNavSub').textContent='Wähle einen Buchstaben';
+}
+function selectChar(ch){
+selectedChar=ch;
+document.getElementById('selectedCharLabel').textContent=ch;highlightZone(ch);
+renderVariants();refreshAlphabetGrid();updateNavBtns();
+const ct=getCharType(ch);
+const zt=ct?getZoneType(ct):null;
+const desc=['g','j','p','q','y'],asc=['b','d','f','h','k','l','t'];
+const isUp=ch===ch.toUpperCase()&&ch!==ch.toLowerCase();
+let hint;
+if(ct){
+const charName=CHAR_NAMES[ch.codePointAt(0)]||('"'+ch+'"');
+hint=charName+': '+(ZONE_HINTS[zt]||'')+' 🟡 Gelbe Zone = Zeichenbereich.';
+}else if(isUp){hint='"'+ch+'": Großbuchstabe – Grundlinie bis Oberlängenlinie.';}
+else if(desc.includes(ch)){hint='"'+ch+'": Unterlänge – Abstrich unter die Grundlinie.';}
+else if(asc.includes(ch)){hint='"'+ch+'": Oberlänge – zeichne bis zur Oberlängenlinie.';}
+else{hint='"'+ch+'": zwischen Grundlinie und Mittellinie.';}
+document.getElementById('drawInfo').textContent=hint;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VARIANTS
+// ═══════════════════════════════════════════════════════════════
+function renderVariants(){
+const row=document.getElementById('variantsRow');row.innerHTML='';
+const hw=getActiveHw();if(!hw||!selectedChar)return;
+const variants=hw.chars[selectedChar]||[];
+if(!variants.length){row.innerHTML='<div style="color:var(--text2);font-size:.78rem;font-style:italic">Noch keine</div>';return;}
+variants.forEach((v,i)=>{
+const t=document.createElement('div');t.className='variant-thumb';
+const src=typeof v==='string'?v:v.dataURL;
+const im=document.createElement('img');im.src=src;t.appendChild(im);
+const d=document.createElement('button');d.className='variant-del';d.textContent='✕';
+d.addEventListener('click',e=>{e.stopPropagation();deleteVariant(i);});t.appendChild(d);
+row.appendChild(t);
+});
+const add=document.createElement('div');add.className='add-variant';add.textContent='+';
+add.addEventListener('click',clearInk);row.appendChild(add);
+}
+function deleteVariant(i){
+const hw=getActiveHw();if(!hw||!selectedChar)return;
+hw.chars[selectedChar].splice(i,1);
+if(!hw.chars[selectedChar].length)delete hw.chars[selectedChar];
+saveDB();renderVariants();refreshAlphabetGrid();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAWING – improved smooth strokes
+// ═══════════════════════════════════════════════════════════════
+let isDrawing=false,penSize=2.5,eraserMode=false,lastPos=null,lastMidPos=null;
+
+// penOpts wired in DOMContentLoaded below
+
+function getPos(e){
+const r=inkCanvas.getBoundingClientRect();
+const src=e.touches?e.touches[0]:e;
+return{x:(src.clientX-r.left)*(CUR_W/r.width),y:(src.clientY-r.top)*(CUR_H/r.height)};
+}
+function startDraw(e){
+e.preventDefault();
+isDrawing=true;
+lastPos=getPos(e);
+lastMidPos=null;
+// Draw a dot for single taps
+if(!eraserMode){
+inkCtx.globalCompositeOperation='source-over';
+inkCtx.fillStyle='rgba(8,5,2,.97)';
+inkCtx.beginPath();
+inkCtx.arc(lastPos.x,lastPos.y,penSize/2,0,Math.PI*2);
+inkCtx.fill();
+}
+}
+function moveDraw(e){
+e.preventDefault();
+if(!isDrawing)return;
+const pos=getPos(e);
+
+if(eraserMode){
+inkCtx.globalCompositeOperation='destination-out';
+inkCtx.strokeStyle='rgba(255,255,255,1)';
+inkCtx.lineWidth=penSize*5;
+inkCtx.lineCap='round';inkCtx.lineJoin='round';
+inkCtx.beginPath();inkCtx.moveTo(lastPos.x,lastPos.y);inkCtx.lineTo(pos.x,pos.y);inkCtx.stroke();
+inkCtx.globalCompositeOperation='source-over';
+}else{
+// Smooth quadratic bezier for natural strokes
+inkCtx.globalCompositeOperation='source-over';
+inkCtx.strokeStyle='rgba(8,5,2,.97)';
+inkCtx.lineWidth=penSize;
+inkCtx.lineCap='round';inkCtx.lineJoin='round';
+
+const midX=(lastPos.x+pos.x)/2;
+const midY=(lastPos.y+pos.y)/2;
+
+inkCtx.beginPath();
+if(lastMidPos){
+  inkCtx.moveTo(lastMidPos.x,lastMidPos.y);
+  inkCtx.quadraticCurveTo(lastPos.x,lastPos.y,midX,midY);
+}else{
+  inkCtx.moveTo(lastPos.x,lastPos.y);
+  inkCtx.lineTo(midX,midY);
+}
+inkCtx.stroke();
+lastMidPos={x:midX,y:midY};
+
+}
+lastPos=pos;
+}
+function endDraw(e){
+e.preventDefault();
+if(isDrawing&&lastPos&&lastMidPos&&!eraserMode){
+// Finish the last segment
+inkCtx.beginPath();
+inkCtx.moveTo(lastMidPos.x,lastMidPos.y);
+inkCtx.lineTo(lastPos.x,lastPos.y);
+inkCtx.stroke();
+}
+isDrawing=false;lastPos=null;lastMidPos=null;
+inkCtx.globalCompositeOperation='source-over';
+}
+
+function toggleEraser(){eraserMode=!eraserMode;document.getElementById('eraserBtn').classList.toggle('eraser-active',eraserMode);}
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE VARIANT
+// ═══════════════════════════════════════════════════════════════
+function saveVariant(){
+if(!selectedChar)return;
+const result=extractInk();
+if(!result){toast('Bitte erst etwas zeichnen!');return;}
+const hw=getActiveHw();if(!hw){toast('Keine aktive Handschrift!');return;}
+if(!hw.chars[selectedChar])hw.chars[selectedChar]=[];
+hw.chars[selectedChar].push(result);
+saveDB();clearInk();if(selectedChar)highlightZone(selectedChar);renderVariants();refreshAlphabetGrid();
+toast('"'+selectedChar+'" gespeichert ('+hw.chars[selectedChar].length+'×)');
+}
+function saveAndNext(){saveVariant();navigateChar(1);}
+
+function extractInk(){
+const w=CUR_W,h=CUR_H;
+const id=inkCtx.getImageData(0,0,w,h);const d=id.data;
+let x0=w,x1=-1,y0=h,y1=-1;
+for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+const i=(y*w+x)*4;
+const r=d[i],g=d[i+1],b=d[i+2],a=d[i+3];
+if(a<15||r>210&&g>210&&b>210)continue;
+if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;
+}
+if(x1<0||y1<0)return null;
+const pad=4;
+const cx=Math.max(0,x0-pad),cy=Math.max(0,y0-pad);
+const cw=Math.min(w,x1+pad+1)-cx,ch=Math.min(h,y1+pad+1)-cy;
+if(cw<=0||ch<=0)return null;
+const tmp=document.createElement('canvas');tmp.width=cw;tmp.height=ch;
+const tc=tmp.getContext('2d');
+const od=tc.createImageData(cw,ch);const o=od.data;
+for(let y=0;y<ch;y++)for(let x=0;x<cw;x++){
+const si=((cy+y)*w+(cx+x))*4;const di=(y*cw+x)*4;
+const r=d[si],g=d[si+1],b=d[si+2],a=d[si+3];
+if(a>=15&&!(r>210&&g>210&&b>210)){o[di]=r;o[di+1]=g;o[di+2]=b;o[di+3]=a;}
+}
+tc.putImageData(od,0,0);
+const ct=getCharType(selectedChar);
+let glyphH,aboveBase,belowBase;
+if(ct){
+glyphH=ct.glyphH;aboveBase=ct.aboveBase;belowBase=ct.belowBase;
+}else{
+aboveBase=Math.max(0.1,(CUR_BASELINE-cy)/CUR_XH);
+belowBase=Math.max(0,(cy+ch-CUR_BASELINE)/CUR_XH);
+glyphH=aboveBase+belowBase;
+}
+return{dataURL:tmp.toDataURL('image/png'),glyphH,aboveBase,belowBase,aspect:cw/ch,v:8};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GENERATE TEXT
+// ═══════════════════════════════════════════════════════════════
+function updateLabels(){
+document.getElementById('charSizeLabel').textContent=document.getElementById('charSize').value+'px';
+document.getElementById('charSpacingLabel').textContent=document.getElementById('charSpacing').value+'px';
+document.getElementById('wordSpacingLabel').textContent=(+document.getElementById('wordSpacing').value).toFixed(2)+'×';
+document.getElementById('lineSpacingLabel').textContent=(+document.getElementById('lineSpacingMult').value).toFixed(1)+'×';
+}
+
+let pageCanvases=[];
+const tintCache=new Map();
+
+// ═══════════════════════════════════════════════════════════════
+// STROKE THICKENING – only changes line weight, not glyph size
+// This runs on extracted ink data at render time.
+// ═══════════════════════════════════════════════════════════════
+
+function getTintedImage(img,hexColor,strokeScale){
+strokeScale=strokeScale||1.0;
+var ssKey=Math.round(strokeScale*10);
+var key=img.src+'|'+hexColor+'|'+ssKey;
+if(tintCache.has(key))return tintCache.get(key);
+const r=parseInt(hexColor.slice(1,3),16);
+const g=parseInt(hexColor.slice(3,5),16);
+const b=parseInt(hexColor.slice(5,7),16);
+const tw=img.naturalWidth,th=img.naturalHeight;
+const tmp=document.createElement('canvas');tmp.width=tw;tmp.height=th;
+const tc=tmp.getContext('2d');
+tc.drawImage(img,0,0);
+const id=tc.getImageData(0,0,tw,th);const dd=id.data;
+for(let i=0;i<dd.length;i+=4){
+if(dd[i+3]>10){
+const brightness=(dd[i]+dd[i+1]+dd[i+2])/3;
+const t=brightness/255;
+dd[i]=Math.round(r+(255-r)*t);
+dd[i+1]=Math.round(g+(255-g)*t);
+dd[i+2]=Math.round(b+(255-b)*t);
+// Ensure full opacity for dark pixels – no weak spots
+if(brightness<180){dd[i+3]=Math.min(255,Math.round(dd[i+3]*1.15));}
+}
+}
+tc.putImageData(id,0,0);
+// Apply stroke thickness BEFORE caching
+if(strokeScale>1.08){
+var rad=Math.max(1,Math.round((strokeScale-1.0)*2.0));
+var dilated=document.createElement('canvas');dilated.width=tw;dilated.height=th;
+var dc2=dilated.getContext('2d');
+for(var dy=-rad;dy<=rad;dy++){for(var dx=-rad;dx<=rad;dx++){
+if(dx*dx+dy*dy<=rad*rad+1)dc2.drawImage(tmp,dx,dy);
+}}
+var id2=dc2.getImageData(0,0,tw,th);var d2=id2.data;
+for(var j=0;j<d2.length;j+=4){if(d2[j+3]>30)d2[j+3]=255;}
+dc2.putImageData(id2,0,0);
+tintCache.set(key,dilated);return dilated;
+}
+tintCache.set(key,tmp);return tmp;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT TEMPLATES
+// ═══════════════════════════════════════════════════════════════
+
+async function generateText(){
+const hw=getActiveHw();if(!hw){toast('Keine Handschrift aktiv!');return;}
+const text=document.getElementById('inputText').value;if(!text.trim()){toast('Bitte Text eingeben!');return;}
+const charSize=+document.getElementById('charSize').value;
+const charSpacing=+document.getElementById('charSpacing').value;
+const wordMult=+document.getElementById('wordSpacing').value;
+const lineMult=+document.getElementById('lineSpacingMult').value;
+const randomMode=document.getElementById('randomMode').value;
+const paperStyle=document.getElementById('paperStyle').value;
+const inkColor=document.getElementById('inkColor').value;
+const strokeScaleEl=document.getElementById('strokeScale');
+const strokeScale=strokeScaleEl?(+strokeScaleEl.value||1.0):1.0;
+// Unsauberkeiten: randomly omit commas (only when >100 words, max 2.9/100)
+const errorOn=(document.getElementById('errorToggle')&&document.getElementById('errorToggle').classList.contains('on'))||false;
+const errorRate=errorOn?(+(document.getElementById('errorRate')?document.getElementById('errorRate').value:1.5)):0;
+const jitterOn=document.getElementById('jitterToggle').classList.contains('on');
+const jitterAmt=jitterOn?(+document.getElementById('jitterAmt').value):0;
+const slantOn=document.getElementById('slantToggle').classList.contains('on');
+const slantBaseDeg=slantOn?(+document.getElementById('slantDeg').value):0;
+const slantVar=slantOn?(+document.getElementById('slantVar').value):0;
+const lineH=Math.round(charSize*lineMult);
+const wordSpace=Math.round(charSize*wordMult);
+
+tintCache.clear();
+const wordCountTotal=(text.match(/\S+/g)||[]).length;
+
+const needed=new Set([...text].filter(c=>c!==' '&&c!=='\n'));
+const missing=new Set();
+const cache={};
+
+function parseVariant(pick,nW,nH){
+let dH,dW,blY;
+if(pick.glyphH!=null){
+dH=Math.max(1,Math.round(pick.glyphH*charSize));
+dW=Math.max(1,Math.round(dH*(pick.aspect||nW/nH)));
+blY=Math.round(pick.aboveBase*charSize);
+}else if(pick.aboveBase!=null){
+dH=Math.max(1,Math.round((pick.aboveBase+pick.belowBase)*charSize));
+dW=Math.max(1,Math.round(dH*(pick.aspect||nW/nH)));
+blY=Math.round(pick.aboveBase*charSize);
+}else{
+dH=Math.round(charSize*1.35);dW=Math.round(nW*(dH/nH));blY=Math.round(dH*0.75);
+}
+return{dW:Math.max(1,dW),dH:Math.max(1,dH),blY};
+}
+
+await Promise.all([...needed].map(c=>new Promise(resolve=>{
+const variants=hw.chars[c]||[];
+if(!variants.length){missing.add(c);resolve();return;}
+const vlist=randomMode==='random'?variants:[variants[0]];
+let loaded=0;const parsed=[];
+vlist.forEach(pick=>{
+const src=typeof pick==='string'?pick:pick.dataURL;
+if(!src){loaded++;if(loaded===vlist.length){if(parsed.length)cache[c]=parsed;else missing.add(c);resolve();}return;}
+const img=new Image();
+img.onload=()=>{
+const nW=img.naturalWidth,nH=img.naturalHeight;
+if(nW&&nH){parsed.push({img,...parseVariant(pick,nW,nH)});}
+loaded++;
+if(loaded===vlist.length){if(parsed.length)cache[c]=parsed;else missing.add(c);resolve();}
+};
+img.onerror=()=>{loaded++;if(loaded===vlist.length){if(parsed.length)cache[c]=parsed;else missing.add(c);resolve();}};
+img.src=src;
+});
+})));
+
+function pickVariant(c){
+const arr=cache[c];if(!arr||!arr.length)return null;
+return arr[Math.floor(Math.random()*arr.length)];
+}
+
+// Word-wrap
+const finalLines=[];
+const lines=text.split('\n').map(l=>l.trimEnd());
+for(const raw of lines){
+if(!raw.trim()){finalLines.push([]);continue;}
+let curLine=[],curW=0;
+for(const word of raw.split(' ').filter(w=>w.length>0)){
+const tokens=[...word].reduce((acc,ch)=>{
+const arr=cache[ch];
+if(!arr||!arr.length)return acc;
+const ref=arr[0];
+acc.push({type:'char',ch,dW:ref.dW});return acc;
+},[]);
+if(!tokens.length)continue;
+const wordW=tokens.reduce((s,t,i)=>s+t.dW+(i>0?charSpacing:0),0);
+if(curLine.length>0&&curW+wordSpace+wordW>A4_TW){
+finalLines.push(curLine);curLine=[...tokens];curW=wordW;
+}else{
+if(curLine.length>0){curLine.push({type:'space',width:wordSpace});curW+=wordSpace;}
+curLine.push(...tokens);
+curW=0;let pc=false;
+for(const t of curLine){if(t.type==='space'){curW+=t.width;pc=false;}else{if(pc)curW+=charSpacing;curW+=t.dW;pc=true;}}
+}
+}
+if(curLine.length)finalLines.push(curLine);
+}
+
+const firstBaseline=A4_MT+lineH;
+const linesPerPage=Math.max(1,Math.floor((A4_H-firstBaseline-A4_MB)/lineH));
+const totalPages=Math.max(1,Math.ceil(finalLines.length/linesPerPage));
+
+pageCanvases=[];
+const wrap=document.getElementById('pagesWrap');wrap.innerHTML='';
+const pngBtns=document.getElementById('pngBtns');pngBtns.innerHTML='';
+
+const DPR=2;
+const RW=A4_W*DPR,RH=A4_H*DPR;
+for(let page=0;page<totalPages;page++){
+const canvas=document.createElement('canvas');
+canvas.width=RW;canvas.height=RH;
+const ctx=canvas.getContext('2d');
+ctx.scale(DPR,DPR);
+drawA4Paper(ctx,paperStyle,lineH,firstBaseline);
+
+const pageLines=finalLines.slice(page*linesPerPage,(page+1)*linesPerPage);
+for(let li=0;li<pageLines.length;li++){
+  const baseline=firstBaseline+li*lineH;
+  let x=A4_ML,pc=false;
+  for(const tok of pageLines[li]){
+    if(tok.type==='space'){x+=tok.width;pc=false;continue;}
+    if(pc)x+=charSpacing;
+    const v=pickVariant(tok.ch);
+    if(!v){x+=tok.dW;pc=true;continue;}
+    if(errorRate>0&&tok.ch===','&&wordCountTotal>100){
+      if(Math.random()<(errorRate/100)){pc=true;continue;}
+    }
+    
+    // Jitter: subtle baseline shift
+    let jitter=0;
+    if(jitterAmt>0){
+      const mag=Math.pow(Math.random(),1.4)*jitterAmt;
+      jitter=Math.random()<0.70?-mag:mag*0.5;
+    }
+    const drawY=Math.round(baseline-v.blY+jitter);
+    
+    // Tint with stroke thickness baked in – glyph dimensions UNCHANGED
+    const tinted=getTintedImage(v.img,inkColor,strokeScale);
+    
+    // Slant per character
+    const slantThisChar=slantBaseDeg+(slantVar>0?(Math.random()-0.5)*2*slantVar:0);
+    const slantRad=slantThisChar*Math.PI/180;
+    
+            if(slantRad!==0){
+      ctx.save();
+      ctx.transform(1,0,Math.tan(slantRad),1,-baseline*Math.tan(slantRad),0);
+      ctx.drawImage(tinted,x,drawY,v.dW,v.dH);
+      ctx.restore();
+    }else{
+      ctx.drawImage(tinted,x,drawY,v.dW,v.dH);
+    }
+    x+=v.dW;pc=true;
+  }
+}
+pageCanvases.push(canvas);
+
+const availW=Math.max(300,(document.getElementById('pagesWrap').clientWidth||700));
+const dispScale=availW/A4_W;
+const dpr=Math.min(window.devicePixelRatio||1,2);
+const dispW=Math.round(A4_W*dispScale*dpr);
+const dispH=Math.round(A4_H*dispScale*dpr);
+const dispCanvas=document.createElement('canvas');
+dispCanvas.width=dispW;dispCanvas.height=dispH;
+dispCanvas.style.cssText='width:100%;height:auto;display:block;';
+const dc=dispCanvas.getContext('2d');
+dc.imageSmoothingEnabled=true;
+dc.imageSmoothingQuality='high';
+dc.drawImage(canvas,0,0,RW,RH,0,0,dispW,dispH);
+const pw=document.createElement('div');pw.className='page-canvas-wrap';
+pw.style.width='100%';
+pw.appendChild(dispCanvas);wrap.appendChild(pw);
+
+const btn=document.createElement('button');
+btn.className='btn btn-outline btn-sm';
+btn.style.marginRight='4px';
+btn.textContent='Seite '+(page+1)+' PNG';
+const p=page;
+btn.onclick=()=>downloadPagePNG(p);
+pngBtns.appendChild(btn);
+
+}
+
+document.getElementById('outputCard').style.display='block';
+document.getElementById('pageCountLabel').textContent=totalPages+' Seite'+(totalPages>1?'n':'');
+missing.size
+?(document.getElementById('missingCharsLabel').textContent='⚠ Fehlend: '+[...missing].filter(c=>c.trim()).slice(0,15).join(' '))
+:(document.getElementById('missingCharsLabel').textContent='✓ Alle Zeichen vorhanden');
+document.getElementById('outputCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+toast('Fertig! '+totalPages+' Seite'+(totalPages>1?'n':'')+' generiert.');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAPER DRAWING
+// ═══════════════════════════════════════════════════════════════
+const PAPER_CFG={
+'gn-lined':      {bg:'#faf8f3',lc:'rgba(95,142,208,.22)',mc:'rgba(208,80,68,.14)',lw:.9,mw:1.2},
+'vintage-lined': {bg:'#f0e6c0',lc:'rgba(140,100,30,.35)',mc:'rgba(180,70,40,.28)',lw:1.3,mw:1.5,texture:'vintage'},
+'warm-beige':    {bg:'#f5ede0',lc:'rgba(180,120,60,.30)',mc:'rgba(210,90,60,.22)',lw:1.1,mw:1.2},
+'rose-lined':    {bg:'#fdf0f0',lc:'rgba(210,100,120,.35)',mc:'rgba(220,60,80,.25)',lw:1.1,mw:1.3},
+'kraft-lined':   {bg:'#c8a97a',lc:'rgba(70,40,10,.45)',mc:'rgba(60,30,5,.50)',lw:1.4,mw:1.6,texture:'kraft'},
+'school-ruled':  {bg:'#ffffff',lc:'rgba(60,120,200,.40)',mc:'rgba(220,60,50,.35)',lw:1.4,mw:1.8,topLine:true},
+'college-ruled': {bg:'#f8f8ff',lc:'rgba(80,80,220,.25)',mc:'rgba(220,60,50,.20)',lw:.8,mw:1.4},
+'blue-ruled':    {bg:'#eef2ff',lc:'rgba(50,90,240,.32)',mc:'rgba(200,50,50,.20)',lw:1.0,mw:1.2},
+'gray-ruled':    {bg:'#f2f2f2',lc:'rgba(80,80,100,.35)',mc:'rgba(160,70,60,.22)',lw:1.1,mw:1.2},
+'green-ruled':   {bg:'#edf7ee',lc:'rgba(40,140,60,.35)',mc:'rgba(200,70,50,.20)',lw:1.1,mw:1.2},
+'gn-grid':       {bg:'#f9f8f5',gc:'rgba(95,142,208,.20)',gw:.8},
+'grid-blue':     {bg:'#f0f4ff',gc:'rgba(60,100,220,.22)',gw:.8},
+'dot-cream':     {bg:'#faf8f3',dc:'rgba(100,130,180,.32)',dr:1.3},
+'dot-white':     {bg:'#ffffff',dc:'rgba(80,110,180,.28)',dr:1.2},
+'plain-white':   {bg:'#ffffff'},
+'plain-cream':   {bg:'#faf8f3'},
+};
+
+function drawA4Paper(ctx,style,lineH,firstBaseline){
+const cfg=PAPER_CFG[style]||PAPER_CFG['gn-lined'];
+ctx.fillStyle=cfg.bg;
+ctx.fillRect(0,0,A4_W,A4_H);
+
+if(cfg.texture==='vintage'){
+ctx.save();
+for(let i=0;i<200;i++){
+const x=Math.random()*A4_W,y=Math.random()*A4_H,r=Math.random()*22+5;
+const gr=ctx.createRadialGradient(x,y,0,x,y,r);
+gr.addColorStop(0,'rgba(100,70,20,.04)');gr.addColorStop(1,'rgba(0,0,0,0)');
+ctx.fillStyle=gr;ctx.beginPath();ctx.ellipse(x,y,r,r*.6,Math.random()*Math.PI,0,Math.PI*2);ctx.fill();
+}
+ctx.restore();
+}
+if(cfg.texture==='kraft'){
+ctx.save();
+for(let i=0;i<500;i++){
+const x=Math.random()*A4_W,y=Math.random()*A4_H;
+ctx.fillStyle='rgba(0,0,0,'+(Math.random()*.04)+')';
+ctx.fillRect(x,y,Math.random()*4+1,1);
+}
+ctx.restore();
+}
+
+ctx.save();ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;ctx.strokeRect(.5,.5,A4_W-1,A4_H-1);ctx.restore();
+
+if(cfg.lc){
+if(cfg.mc){
+ctx.save();ctx.strokeStyle=cfg.mc;ctx.lineWidth=cfg.mw||1.2;ctx.setLineDash([]);
+ctx.beginPath();ctx.moveTo(A4_ML-8,4);ctx.lineTo(A4_ML-8,A4_H-4);ctx.stroke();ctx.restore();
+}
+if(cfg.topLine){
+ctx.save();ctx.strokeStyle='rgba(60,120,200,.45)';ctx.lineWidth=1.4;ctx.setLineDash([]);
+ctx.beginPath();ctx.moveTo(0,firstBaseline-lineH*2.2);ctx.lineTo(A4_W,firstBaseline-lineH*2.2);ctx.stroke();
+ctx.restore();
+}
+for(let base=firstBaseline;base<A4_H-A4_MB+lineH*.4;base+=lineH){
+ctx.save();ctx.strokeStyle=cfg.lc;ctx.lineWidth=cfg.lw||.9;ctx.setLineDash([]);
+ctx.beginPath();ctx.moveTo(A4_ML-8,base);ctx.lineTo(A4_W-A4_MR,base);ctx.stroke();ctx.restore();
+}
+}
+if(cfg.gc){
+const gs=Math.round(lineH*.5);
+ctx.save();ctx.strokeStyle=cfg.gc;ctx.lineWidth=cfg.gw||.7;ctx.setLineDash([]);
+for(let y=0;y<=A4_H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(A4_W,y);ctx.stroke();}
+for(let x=0;x<=A4_W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,A4_H);ctx.stroke();}
+ctx.restore();
+}
+if(cfg.dc){
+const gs=Math.round(lineH*.5);const dr=cfg.dr||1.2;
+ctx.save();ctx.fillStyle=cfg.dc;
+for(let y=gs;y<A4_H;y+=gs)for(let x=gs;x<A4_W;x+=gs){
+ctx.beginPath();ctx.arc(x,y,dr,0,Math.PI*2);ctx.fill();
+}
+ctx.restore();
+}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PEN EFFECTS
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// DOWNLOAD
+// ═══════════════════════════════════════════════════════════════
+function downloadPagePNG(pageIdx){
+if(!pageCanvases[pageIdx]){toast('Seite nicht gefunden.');return;}
+window.open(pageCanvases[pageIdx].toDataURL('image/png'),'_blank');
+toast('PNG: Im neuen Tab → Gedrückt halten → Speichern');
+}
+
+
+
+function downloadPDF(){
+if(!pageCanvases.length){toast('Erst generieren!');return;}
+try{
+var jsPDFLib=window.jspdf&&window.jspdf.jsPDF?window.jspdf.jsPDF:window.jsPDF;
+if(!jsPDFLib){toast('jsPDF nicht geladen!');return;}
+var pdf=new jsPDFLib({orientation:'portrait',unit:'mm',format:'a4'});
+pageCanvases.forEach(function(c,i){
+if(i>0)pdf.addPage('a4','portrait');
+pdf.addImage(c.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
+});
+pdf.save('slow2madness.pdf');
+toast('PDF wird heruntergeladen!');
+}catch(e){toast('PDF-Fehler: '+e.message);}
+}
+function exportData(){
+var json=JSON.stringify(db,null,2);
+var blob=new Blob([json],{type:'application/json'});
+var url=URL.createObjectURL(blob);
+var a=document.createElement('a');
+a.href=url;
+a.download='slow2madness-backup.json';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+toast('Backup gespeichert!');
+}
+
+function importData(e){
+const file=e.target.files[0];if(!file)return;
+const r=new FileReader();
+r.onload=ev=>{
+try{
+const imp=JSON.parse(ev.target.result);
+if(imp.handwritings){db=imp;saveDB();renderHwList();refreshAlphabetGrid();toast('Import: '+imp.handwritings.length+' Handschrift(en).');}
+else toast('Ungültige Datei.');
+}catch(err){toast('Fehler beim Import.');}
+};
+r.readAsText(file);e.target.value='';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg){
+const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOGGLE SWITCH
+// ═══════════════════════════════════════════════════════════════
+function toggleSwitch(swId,controlsId){
+const sw=document.getElementById(swId);
+const ctrl=document.getElementById(controlsId);
+sw.classList.toggle('on');
+if(ctrl)ctrl.style.display=sw.classList.contains('on')?'block':'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════════════════════
+let currentTheme='dark';
+function toggleTheme(){
+currentTheme=currentTheme==='dark'?'light':'dark';
+if(currentTheme==='light'){
+document.body.classList.add('light-mode');
+document.getElementById('themeBtn').textContent='☽ Dark';
+}else{
+document.body.classList.remove('light-mode');
+document.getElementById('themeBtn').textContent='☀️ Light';
+}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRESET SAVE / LOAD / RESET – fixed file download
+// ═══════════════════════════════════════════════════════════════
+const DEFAULT_PRESET={
+charSize:22,charSpacing:-1,wordSpacing:0.55,lineSpacingMult:2.4,
+randomMode:'random',paperStyle:'gn-lined',inkColor:'#0a0502',
+errorOn:false,errorRate:1.5,
+jitterOn:false,jitterAmt:2.5,
+slantOn:false,slantDeg:-5,slantVar:2,
+theme:'dark'
+};
+function getPresetValues(){
+return{
+charSize:+document.getElementById('charSize').value,
+charSpacing:+document.getElementById('charSpacing').value,
+wordSpacing:+document.getElementById('wordSpacing').value,
+lineSpacingMult:+document.getElementById('lineSpacingMult').value,
+randomMode:document.getElementById('randomMode').value,
+paperStyle:document.getElementById('paperStyle').value,
+inkColor:document.getElementById('inkColor').value,
+errorOn:(document.getElementById('errorToggle')&&document.getElementById('errorToggle').classList.contains('on'))||false,
+errorRate:+((document.getElementById('errorRate')?document.getElementById('errorRate').value:1.5)),
+jitterOn:document.getElementById('jitterToggle').classList.contains('on'),
+jitterAmt:+document.getElementById('jitterAmt').value,
+slantOn:document.getElementById('slantToggle').classList.contains('on'),
+slantDeg:+document.getElementById('slantDeg').value,
+slantVar:+document.getElementById('slantVar').value,
+theme:currentTheme,
+};
+}
+function applyPresetValues(p){
+const set=(id,val)=>{const el=document.getElementById(id);if(el&&val!=null)el.value=val;};
+set('charSize',p.charSize||22);
+set('charSpacing',p.charSpacing!=null?p.charSpacing:-1);
+set('wordSpacing',p.wordSpacing||0.55);
+set('lineSpacingMult',p.lineSpacingMult||2.4);
+set('randomMode',p.randomMode||'random');
+set('paperStyle',p.paperStyle||'gn-lined');
+set('inkColor',p.inkColor||'#0a0502');
+const errorToggleEl=document.getElementById('errorToggle');
+if(errorToggleEl){if(p.errorOn)errorToggleEl.classList.add('on');else errorToggleEl.classList.remove('on');}
+const errorCtrlEl=document.getElementById('errorControls');
+if(errorCtrlEl)errorCtrlEl.style.display=(p.errorOn?'block':'none');
+set('errorRate',p.errorRate||1.5);
+set('jitterAmt',p.jitterAmt||2.5);
+set('slantDeg',p.slantDeg!=null?p.slantDeg:-5);
+set('slantVar',p.slantVar||2);
+const applyToggle=(swId,ctrlId,on)=>{
+const sw=document.getElementById(swId);const ctrl=document.getElementById(ctrlId);
+if(!sw)return;
+if(on)sw.classList.add('on');else sw.classList.remove('on');
+if(ctrl)ctrl.style.display=on?'block':'none';
+};
+applyToggle('jitterToggle','jitterControls',!!p.jitterOn);
+applyToggle('slantToggle','slantControls',!!p.slantOn);
+if(p.theme&&p.theme!==currentTheme)toggleTheme();
+}
+function savePresetFile(){
+var p=getPresetValues();
+var json=JSON.stringify(p,null,2);
+var blob=new Blob([json],{type:'application/json'});
+var url=URL.createObjectURL(blob);
+var a=document.createElement('a');
+a.href=url;
+a.download='slow2madness-einstellungen.json';
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+URL.revokeObjectURL(url);
+toast('Einstellungen gespeichert!');
+}
+function loadPresetFile(e){
+const file=e.target.files[0];if(!file)return;
+const r=new FileReader();
+r.onload=ev=>{
+try{
+const p=JSON.parse(ev.target.result);
+if(p&&typeof p==='object'){applyPresetValues(p);toast('Einstellungen geladen!');}
+else toast('Ungültige Einstellungs-Datei.');
+}catch(err){toast('Fehler beim Laden.');}
+};
+r.readAsText(file);e.target.value='';
+}
+function resetPreset(){
+applyPresetValues(DEFAULT_PRESET);
+// Restore to dark if needed
+if(currentTheme==='light'){toggleTheme();}
+toast('Auf Standard zurückgesetzt.');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', function() {
+// Init canvas references - must happen after DOM is ready
+inkCanvas = document.getElementById('inkCanvas');
+inkCtx = inkCanvas ? inkCanvas.getContext('2d') : null;
+guideCanvas = document.getElementById('guideCanvas');
+guideCtx = guideCanvas ? guideCanvas.getContext('2d') : null;
+// Wire canvas drawing events
+if(inkCanvas){
+inkCanvas.addEventListener('mousedown',startDraw);
+inkCanvas.addEventListener('mousemove',moveDraw);
+inkCanvas.addEventListener('mouseup',endDraw);
+inkCanvas.addEventListener('mouseleave',endDraw);
+inkCanvas.addEventListener('touchstart',startDraw,{passive:false});
+inkCanvas.addEventListener('touchmove',moveDraw,{passive:false});
+inkCanvas.addEventListener('touchend',endDraw,{passive:false});
+}
+// Wire tab buttons
+  document.querySelectorAll('#mainTabs button').forEach(function(btn){
+    btn.addEventListener('click', function(){ showTab(this.dataset.tab, this); });
+  });
+  // Wire pen opts - with null check
+  var po = document.getElementById('penOpts');
+  if(po){
+    po.addEventListener('click', function(e){
+      var opt = e.target.closest('.pen-opt');
+      if(!opt) return;
+      penSize = parseFloat(opt.dataset.size);
+      document.querySelectorAll('#penOpts .pen-opt').forEach(function(b){ b.classList.remove('active'); });
+      opt.classList.add('active');
+    });
+  }
+  // Init
+  try{ loadDB(); } catch(ex){ console.error('loadDB',ex); }
+  try{ renderHwList(); } catch(ex){ console.error('renderHwList',ex); }
+  try{ refreshAlphabetGrid(); } catch(ex){ console.error('refreshAlphabetGrid',ex); }
+  try{ clearInk(); } catch(ex){ console.error('clearInk',ex); }
+  try{ drawGuides(); } catch(ex){ console.error('drawGuides',ex); }
+  try{ updateLabels(); } catch(ex){ console.error('updateLabels',ex); }
+
+
+
+});
+</script>
+
+</body>
+</html>

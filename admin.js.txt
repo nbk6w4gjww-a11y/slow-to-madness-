@@ -1,0 +1,112 @@
+import { requireAuth, getAllUsers, createUser, updateUser, deleteUser, resetDevices, removeDevice } from './auth.js';
+
+const session = requireAuth(true);
+if (!session) throw new Error("Kein Admin");
+
+let users = [];
+
+async function loadUsers() {
+  users = await getAllUsers();
+  renderUsers();
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('totalUsers').textContent = users.length;
+  document.getElementById('activeUsers').textContent = users.filter(u => u.status === 'active').length;
+  document.getElementById('bannedUsers').textContent = users.filter(u => u.status === 'banned').length;
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('usersTableBody');
+  tbody.innerHTML = '';
+  
+  if (users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#8a8680;padding:30px;">Keine Nutzer vorhanden</td></tr>';
+    return;
+  }
+  
+  users.forEach(u => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(u.username)}</td>
+      <td><span class="badge ${u.status}">${u.status}</span></td>
+      <td>${u.allowed_devices}</td>
+      <td>${(u.device_ids || []).length} / ${u.allowed_devices}</td>
+      <td>${formatDevices(u.device_ids || [], u.id)}</td>
+      <td>
+        <button class="btn btn-sm btn-outline" onclick="toggleStatus('${u.id}')">
+          ${u.status === 'active' ? 'Sperren' : 'Entsperren'}
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="resetUserDevices('${u.id}')">
+          Geräte reset
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="deleteUserAccount('${u.id}')">
+          Löschen
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function formatDevices(deviceIds, userId) {
+  if (!deviceIds.length) return '<em>Keine</em>';
+  return deviceIds.map((d, i) => 
+    `<span class="device-tag">${d.substr(0, 12)}... 
+      <button class="btn btn-xs" onclick="removeUserDevice('${userId}', '${d}')">✕</button>
+    </span>`
+  ).join(' ');
+}
+
+window.toggleStatus = async (userId) => {
+  const u = users.find(x => x.id === userId);
+  await updateUser(userId, { status: u.status === 'active' ? 'banned' : 'active' });
+  await loadUsers();
+};
+
+window.resetUserDevices = async (userId) => {
+  if (!confirm('Alle Geräte zurücksetzen?')) return;
+  await resetDevices(userId);
+  await loadUsers();
+};
+
+window.removeUserDevice = async (userId, deviceId) => {
+  await removeDevice(userId, deviceId);
+  await loadUsers();
+};
+
+window.deleteUserAccount = async (userId) => {
+  if (!confirm('Benutzer wirklich löschen?')) return;
+  await deleteUser(userId);
+  await loadUsers();
+};
+
+document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = document.getElementById('newUsername').value.trim();
+  const password = document.getElementById('newPassword').value;
+  const devices = parseInt(document.getElementById('newDevices').value) || 1;
+  
+  if (!username || !password) {
+    alert('Alle Felder ausfüllen!');
+    return;
+  }
+  
+  try {
+    await createUser(username, password, devices);
+    e.target.reset();
+    await loadUsers();
+    alert('Nutzer erstellt!');
+  } catch (err) {
+    alert('Fehler: ' + err.message);
+  }
+});
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+loadUsers();
